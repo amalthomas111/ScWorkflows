@@ -22,8 +22,8 @@ rule fastqdump:
                 "rawreads"
         run:
                 #shell("fastq-dump --gzip --split-files {input.sra}  -O {params}")
-                with open(os.path.join("rawreads",wildcards.sample+".dump.log"),'w') as outhandle:
-                        outhandle.write(str(len(glob.glob(os.path.join("rawreads",wildcards.sample+"_*.fastq.gz")))))
+                with open(os.path.join("rawreads",wildcards.sample+".dump.log"),'w') as out:
+                        out.write(str(len(glob.glob(os.path.join("rawreads",wildcards.sample+"_*.fastq.gz")))))
 
 rule format_filenames:
         input:
