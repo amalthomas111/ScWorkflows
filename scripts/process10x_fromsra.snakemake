@@ -1,0 +1,54 @@
+import os,sys,glob
+#configfile: 'hg19_config.yaml'
+
+SAMPLES=[]
+for line in open("list.txt"):
+        if line!="" and line!="\n":
+                SAMPLES.append(line.strip())
+print(SAMPLES)
+
+
+rule all:
+        input:
+                expand("rawreads/{sample}_S1_L001_{mate}_001.fastq.gz",
+                        sample=SAMPLES,mate=["R1","R2"])
+
+rule fastqdump:
+        input:
+                sra = "rawreads/{sample}.sra"
+        output:
+                dumplog = "rawreads/{sample}.dump.log"
+        params:
+                "rawreads"
+        run:
+                #shell("fastq-dump --gzip --split-files {input.sra}  -O {params}")
+                with open(os.path.join("rawreads",wildcards.sample+".dump.log"),'w') as outhandle:
+                        outhandle.write(str(len(glob.glob(os.path.join("rawreads",wildcards.sample+"_*.fastq.gz")))))
+
+rule format_filenames:
+        input:
+                log = "rawreads/{sample}.dump.log"
+        output:
+                r1 = "rawreads/{sample}_S1_L001_R1_001.fastq.gz",
+                r2 = "rawreads/{sample}_S1_L001_R2_001.fastq.gz"
+        params:
+                i1 = "rawreads/{sample}_S1_L001_I1_001.fastq.gz"
+        run:
+                with open(input.log) as inputhandle:
+                        no_of_files=inputhandle.read().strip()
+                if no_of_files == "3":
+                # needs further improvement to check which file is which (R1, R2 & I1)
+                # rather than blindly renaming
+                        shell("mv rawreads/{wildcards.sample}_1.fastq.gz {output.r1};\
+                               mv rawreads/{wildcards.sample}_2.fastq.gz {params.i1};\
+                               mv rawreads/{wildcards.sample}_3.fastq.gz {output.r2}")
+                elif no_of_files == "2":
+                # needs further improvement to check which file is which
+                # rather than blindly renaming
+                        shell("mv rawreads/{wildcards.sample}_1.fastq.gz {output.r1};\
+                               mv rawreads/{wildcards.sample}_2.fastq.gz {output.r2}")
+                elif no_of_files == "1":
+                # This is the case where cellbarcode+umi goes in the header
+                        print(wilcards.sample,": only one output file from fastqdump!")
+                else:
+                        print(wilcards.sample,": weird number of output files from fastqdump")
